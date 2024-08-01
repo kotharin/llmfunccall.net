@@ -1,0 +1,10 @@
+obj/
+bin/
+.vscode/
+data/
+TestResults/
+.git
+cik.txt
+.fake
+.env
+.DS_Store

@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="EdgarData.fs" />
+    <Compile Include="Configuration.fs" />
+    <Compile Include="FunctionWrapper.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+      <None Include=".env">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Include="cik.txt">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OpenAI" Version="2.0.0-beta.7" />
+  </ItemGroup>
+
+</Project>
