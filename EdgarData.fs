@@ -34,3 +34,6 @@ module CIK =
         //printfn "profit:%i" value
         value
     // Apple Inc = 0000320193 
+
+    let getSummary (cik:string) (companyName:string) (profit:int) =
+        sprintf "{\"cik\":\"%s\", \"companyName\":\"%s\", \"profit\": %i }" cik companyName profit

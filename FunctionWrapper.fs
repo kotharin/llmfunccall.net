@@ -22,7 +22,6 @@ module EdgarFunctions =
         }            
         """
         let parameters = BinaryData.FromString parameterDefinition
-        //printfn "getCIK: name = %s" name
         ChatTool.CreateFunctionTool(name, description, parameters)
 
     let getFinancials =
@@ -41,13 +40,37 @@ module EdgarFunctions =
                     "description": "The name of the company"
                 }
             },
-            "required": [ "cik" ]
+            "required": [ "cik", "companyName" ]
         }            
         """
         let parameters = BinaryData.FromString parameterDefinition
-        //printfn "getFD: name = %s" name
         ChatTool.CreateFunctionTool(name, description, parameters)
 
+    let getSummary =
+        let name = nameof(EdgarData.CIK.getSummary)
+        let description = "Get the summary data for a given CIK, Company and Profit"
+        let parameterDefinition = """
+        {
+            "type": "object",
+            "properties": {
+                "cik": {
+                    "type": "string",
+                    "description": "The CIK of the company"
+                },
+                "companyName": {
+                    "type": "string",
+                    "description": "The name of the company"
+                },
+                "profit": {
+                    "type": "number",
+                    "description": "The profit of the company"
+                }
+            },
+            "required": [ "cik", "companyName", "profit" ]
+        }            
+        """
+        let parameters = BinaryData.FromString parameterDefinition
+        ChatTool.CreateFunctionTool(name, description, parameters)
 
     let execFunction (toolCall: ChatToolCall) =
         match toolCall.FunctionName with
@@ -76,6 +99,24 @@ module EdgarFunctions =
                     let x = sprintf "Profit for %s= $%i" cn fin
                     printfn "%s" x
                     x
+                else    
+                    ""
+            else
+                ""
+
+        | "getSummary" ->
+            let doc = JsonDocument.Parse(toolCall.FunctionArguments)
+            let mutable data = new JsonElement()
+            if doc.RootElement.TryGetProperty("cik", &data) then
+                let cik = data.GetString()
+                if doc.RootElement.TryGetProperty("companyName", &data) then
+                    let cn = data.GetString()
+                    if doc.RootElement.TryGetProperty("profit", &data) then
+                        let profit = data.GetInt32()
+                        let summary = CIK.getSummary cik cn profit
+                        summary
+                    else
+                        ""
                 else    
                     ""
             else

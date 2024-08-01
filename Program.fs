@@ -9,7 +9,8 @@
 
     let systemPromptText = 
         "You are a Finaincial AI Assistant. 
-        When asked to fetch data for a company, you will first get the CIK information for that company and then use that to get financial data about the company and then return all of that information in JSON with  properties for CIK, Company Name and Profit. 
+        When asked to fetch data for a company, you will first get the CIK information for that company and then use that to get financial data about the company.
+        Then return the summary of the  CIK, Company Name and Profit using the summary tool. 
         Only use the data retrieved. 
         Please use the tools provided to accomplish your tasks."
 
@@ -49,6 +50,7 @@
         let client = new ChatClient("gpt-3.5-turbo", creds)
         options.Tools.Add(getCIK)
         options.Tools.Add(getFinancials)
+        options.Tools.Add(getSummary)
         let systemPrompt = new SystemChatMessage(systemPromptText) :> ChatMessage
         let messages = 
             [
