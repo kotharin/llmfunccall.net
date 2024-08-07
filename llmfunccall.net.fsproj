@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="EdgarData.fs" />
+    <Compile Include="Data.fs" />
     <Compile Include="Configuration.fs" />
     <Compile Include="FunctionWrapper.fs" />
     <Compile Include="Program.fs" />
@@ -18,8 +19,13 @@
       <None Include="cik.txt">
           <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Include="data.txt">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.16.2" />
+    <PackageReference Include="Milvus.Client" Version="2.3.0-preview.1" />
     <PackageReference Include="OpenAI" Version="2.0.0-beta.7" />
   </ItemGroup>
 

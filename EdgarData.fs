@@ -33,7 +33,7 @@ module CIK =
         let value = rnd.Next(10) * 10000
         //printfn "profit:%i" value
         value
-    // Apple Inc = 0000320193 
+    // Apple Inc = 0000320193 0000320193-24-000081
 
     let getSummary (cik:string) (companyName:string) (profit:int) =
         sprintf "{\"cik\":\"%s\", \"companyName\":\"%s\", \"profit\": %i }" cik companyName profit
