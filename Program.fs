@@ -4,22 +4,17 @@
     open System.IO
     open FSharp.Core
     open OpenAI.Chat
+    open Milvus.Client
     open Wrapper.EdgarFunctions
 
     open EdgarData
     open Config
     open VectorDB
 
-    let systemPromptText = 
-        "You are a Finaincial AI Assistant. 
-        When asked to fetch data for a company, you will first get the CIK information for that company and then use that to get financial data about the company.
-        Then return the summary of the  CIK, Company Name and Profit using the summary tool. 
-        Only use the data retrieved. 
-        Please use the tools provided to accomplish your tasks."
 
-    let model = "gpt-3.5-turbo"
 
-    let userMessage = "What is the financial data for Apple Inc. and Google Inc."
+
+    
 
     let rec processMessage (client:ChatClient) (options:ChatCompletionOptions) (messages:seq<ChatMessage>) =
         
@@ -48,9 +43,19 @@
             messages
 
     let processUserMessage key (message:string) =
+
+        let systemPromptText = 
+            "You are a Finaincial AI Assistant. 
+            When asked to fetch data for a company, you will first get the CIK information for that company and then use that to get financial data about the company.
+            Then return the summary of the  CIK, Company Name and Profit using the summary tool. 
+            Only use the data retrieved. 
+            Please use the tools provided to accomplish your tasks."
+
+        let model = "gpt-3.5-turbo"
+
         let options = new ChatCompletionOptions()
         let creds = new ClientModel.ApiKeyCredential(key)
-        let client = new ChatClient("gpt-3.5-turbo", creds)
+        let client = new ChatClient(model, creds)
         options.Tools.Add(getCIK)
         options.Tools.Add(getFinancials)
         options.Tools.Add(getSummary)
@@ -73,6 +78,32 @@
             )    
         )
 
+    let financialRAGQuery key gptModel embeddingModel query = task {
+
+        let systemPromptPreamble = "You are a helpful AI assistant that answers users queries. Please use only the data provided below to asnwer the users question. If you cannot find the answer in the data below, please say I don't know."
+
+        let! result = 
+            Data.search key embeddingModel "CompanyData" query
+
+        let possibleMatch =
+            result
+            |> Seq.fold(fun state (score,chunk) ->
+                //printfn "*** Score: %f, Chunk: %s" score chunk
+                state + Environment.NewLine + chunk
+            ) ""
+        let systemPrompt = systemPromptPreamble + Environment.NewLine + " Data: " + Environment.NewLine + possibleMatch
+
+        let messages = [
+            new SystemChatMessage(systemPrompt) :> ChatMessage;
+            new UserChatMessage(query)
+        ]
+        let creds = new ClientModel.ApiKeyCredential(key)
+        let client = new ChatClient(gptModel, creds)
+
+        return processMessage client (new ChatCompletionOptions()) messages 
+
+    }
+
     let map f g = async {
         let! x = g
         return f x
@@ -82,6 +113,7 @@
         let oaiKey = Environment.GetEnvironmentVariable "OPEN_AI_KEY"
         let embeddingModel = "text-embedding-3-small"
         
+        let userMessage = "What is the financial data for Apple Inc. and Google Inc."
         (*
         processUserMessage oaiKey userMessage 
         |> showOutput
@@ -110,35 +142,12 @@
             |> Async.RunSynchronously
 
         printfn "%A" result
-        
-        let data = File.ReadAllText "data.txt"
-        let embs = Data.getOpenAIEmbeddings oaiKey "text-embedding-3-small" data
-        
-        embs
-        |> Seq.iter(fun (text, emb) -> 
-            printfn "TL: %i, EL: %i" (text.Length) emb.Length
-        )
-        
-        //Data.deleteDatabase("financials") |> Async.RunSynchronously
-
-        let embs = Data.getOpenAIEmbeddings oaiKey "text-embedding-3-small" "Are there any legal proceedings "
-        
-        embs
-        |> Seq.iter(fun (text, emb) -> 
-            printfn "TL: %i, EL: %i" (text.Length) emb.Length
-        )
         *)
-        //let _ = Data.createIndex "CompanyData" |> Async.RunSynchronously
 
-        let result = 
-            Data.search oaiKey embeddingModel "CompanyData" "When were the antitrust filings made?"
-            |> Async.AwaitTask
-            |> Async.RunSynchronously
-
-        result.FieldsData
-        |> Seq.iter(fun d -> 
-            printfn "-- data: %A" d
-        )
-
-
+        let query = "Are there any legal proceedings and when was an antitrust lawsuit filed?"
+        financialRAGQuery oaiKey "gpt-3.5-turbo" embeddingModel query
+        |> Async.AwaitTask
+        |> Async.RunSynchronously
+        |> showOutput
+        
         0

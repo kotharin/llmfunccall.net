@@ -10,6 +10,15 @@ module Data =
     open Microsoft.SemanticKernel.Text
     let milvusClient = new MilvusClient("localhost", 19530, false,"financials" );
     
+    let getOPAIEmbeddingsForLines key model (data:seq<string>) =
+        let textChunks = TextChunker.SplitPlainTextParagraphs(data, 2000, 200)
+
+        let ec = new EmbeddingClient(model, key)
+        textChunks
+        |> Seq.map(fun chunk ->
+            chunk, ec.GenerateEmbedding(chunk).Value.Vector
+        )
+    
     let getOpenAIEmbeddings (key:string ) (model:string) (data:string) = 
 
         // chunk the data
@@ -89,5 +98,16 @@ module Data =
         searchParameters.OutputFields.Add("chunk")
         searchParameters.ConsistencyLevel <- ConsistencyLevel.Strong
 
-        return! collection.SearchAsync("notes", emb, SimilarityMetricType.Cosine, 3, searchParameters)
+        let! results = collection.SearchAsync("notes", emb, SimilarityMetricType.Cosine, 3, searchParameters)
+
+        // extract the scores and data
+        let chunkData = (results.FieldsData.Item(0)) :?> FieldData<string>
+
+        // return the chunks and scores
+        return
+            chunkData.Data
+            |> Seq.mapi(fun i fd ->
+                results.Scores.Item(i), fd
+
+            )
     }
